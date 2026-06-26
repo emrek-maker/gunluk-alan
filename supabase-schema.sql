@@ -9,6 +9,8 @@ create table if not exists public.daily_notes (
 
 alter table public.daily_notes enable row level security;
 
+grant select, insert, update, delete on public.daily_notes to authenticated;
+
 drop policy if exists "daily_notes_select_own" on public.daily_notes;
 create policy "daily_notes_select_own"
 on public.daily_notes
