@@ -69,7 +69,7 @@
 
     header {
       display: grid;
-      grid-template-columns: 1fr auto;
+      grid-template-columns: 1fr auto auto;
       gap: 16px;
       align-items: center;
       margin-bottom: 16px;
@@ -119,6 +119,66 @@
       color: var(--muted);
       font-weight: 850;
       white-space: nowrap;
+    }
+
+    .auth-card {
+      min-width: 210px;
+      display: grid;
+      gap: 8px;
+      padding: 10px;
+      border: 1px solid rgba(21, 23, 27, 0.12);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.82);
+    }
+
+    .auth-user {
+      display: none;
+      grid-template-columns: 32px 1fr;
+      gap: 8px;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .auth-user img {
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      background: #eef2f5;
+    }
+
+    .auth-name {
+      min-width: 0;
+      font-weight: 900;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .auth-mode {
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+
+    .auth-actions {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+    }
+
+    .google-btn {
+      color: white;
+      background: #1f1f1f;
+      border-color: #1f1f1f;
+    }
+
+    .signout-btn {
+      display: none;
+      min-height: 40px;
+      padding: 0 10px;
+      color: var(--coral);
+      background: rgba(201, 81, 60, 0.06);
+      border-color: rgba(201, 81, 60, 0.24);
     }
 
     .week-strip {
@@ -507,6 +567,10 @@
         white-space: normal;
       }
 
+      .auth-card {
+        width: 100%;
+      }
+
       .layout {
         grid-template-columns: 1fr;
       }
@@ -553,6 +617,10 @@
         height: 46px;
       }
 
+      .auth-actions {
+        grid-template-columns: 1fr;
+      }
+
       .task-form {
         grid-template-columns: 1fr;
       }
@@ -582,6 +650,19 @@
         </div>
       </div>
       <div class="today-chip" id="todayChip"></div>
+      <section class="auth-card" aria-label="Hesap">
+        <div class="auth-user" id="authUser">
+          <img id="authAvatar" alt="" />
+          <div>
+            <div class="auth-name" id="authName">Misafir</div>
+            <div class="auth-mode" id="authMode">Yerel kayıt</div>
+          </div>
+        </div>
+        <div class="auth-actions">
+          <button class="google-btn" id="signInBtn">Google ile gir</button>
+          <button class="signout-btn" id="signOutBtn">Çık</button>
+        </div>
+      </section>
     </header>
 
     <nav class="card week-strip" id="weekStrip" aria-label="Haftalık hızlı seçim"></nav>
@@ -649,7 +730,25 @@
     </section>
   </main>
 
-  <script>
+  <script src="./firebase-config.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import {
+      GoogleAuthProvider,
+      getAuth,
+      onAuthStateChanged,
+      signInWithPopup,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+    import {
+      collection,
+      deleteDoc,
+      doc,
+      getDocs,
+      getFirestore,
+      setDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
     const todayChip = document.querySelector("#todayChip");
     const weekStrip = document.querySelector("#weekStrip");
     const monthTitle = document.querySelector("#monthTitle");
@@ -669,11 +768,31 @@
     const noteStatus = document.querySelector("#noteStatus");
     const taskTotal = document.querySelector("#taskTotal");
     const taskDone = document.querySelector("#taskDone");
+    const signInBtn = document.querySelector("#signInBtn");
+    const signOutBtn = document.querySelector("#signOutBtn");
+    const authUser = document.querySelector("#authUser");
+    const authAvatar = document.querySelector("#authAvatar");
+    const authName = document.querySelector("#authName");
+    const authMode = document.querySelector("#authMode");
 
     const today = new Date();
     let cursor = new Date(today.getFullYear(), today.getMonth(), 1);
     let selected = toKey(today);
     let store = JSON.parse(localStorage.getItem("gunluk-alan") || "{}");
+    let auth = null;
+    let db = null;
+    let activeUser = null;
+    let cloudReady = false;
+
+    const firebaseConfig = window.GUNLUK_ALAN_FIREBASE_CONFIG || {};
+    const hasFirebaseConfig = Boolean(firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.authDomain);
+
+    if (hasFirebaseConfig) {
+      const app = initializeApp(firebaseConfig);
+      auth = getAuth(app);
+      db = getFirestore(app);
+      cloudReady = true;
+    }
 
     todayChip.textContent = new Intl.DateTimeFormat("tr-TR", {
       weekday: "long",
@@ -693,14 +812,102 @@
       return new Date(year, month - 1, day);
     }
 
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
     function getDayData(key = selected) {
       if (!store[key]) store[key] = { note: "", tasks: [] };
       return store[key];
     }
 
+    async function saveSelectedDayToCloud() {
+      if (!cloudReady || !activeUser) return;
+      const data = getDayData();
+      const ref = doc(db, "users", activeUser.uid, "days", selected);
+
+      if (!data.note.trim() && !data.tasks.length) {
+        await deleteDoc(ref);
+        return;
+      }
+
+      await setDoc(ref, {
+        note: data.note,
+        tasks: data.tasks,
+        updatedAt: new Date().toISOString()
+      });
+    }
+
+    async function loadCloudStore(user) {
+      const snapshot = await getDocs(collection(db, "users", user.uid, "days"));
+      const nextStore = {};
+      snapshot.forEach((dayDoc) => {
+        const data = dayDoc.data();
+        nextStore[dayDoc.id] = {
+          note: data.note || "",
+          tasks: Array.isArray(data.tasks) ? data.tasks : []
+        };
+      });
+
+      if (Object.keys(nextStore).length) {
+        store = nextStore;
+        localStorage.setItem("gunluk-alan", JSON.stringify(store));
+      } else {
+        await Promise.all(Object.keys(store).map(async (key) => {
+          const data = store[key];
+          if (!data || (!data.note?.trim() && !data.tasks?.length)) return;
+          await setDoc(doc(db, "users", user.uid, "days", key), {
+            note: data.note || "",
+            tasks: Array.isArray(data.tasks) ? data.tasks : [],
+            updatedAt: new Date().toISOString()
+          });
+        }));
+      }
+    }
+
+    function renderAuth() {
+      if (!hasFirebaseConfig) {
+        authUser.style.display = "grid";
+        authAvatar.removeAttribute("src");
+        authName.textContent = "Kurulum gerekli";
+        authMode.textContent = "Firebase ayarı bekliyor";
+        signInBtn.textContent = "Google hazır değil";
+        signInBtn.disabled = true;
+        signOutBtn.style.display = "none";
+        return;
+      }
+
+      if (!activeUser) {
+        authUser.style.display = "grid";
+        authAvatar.removeAttribute("src");
+        authName.textContent = "Misafir";
+        authMode.textContent = "Bu cihazda kayıt";
+        signInBtn.textContent = "Google ile gir";
+        signInBtn.disabled = false;
+        signOutBtn.style.display = "none";
+        return;
+      }
+
+      authUser.style.display = "grid";
+      authAvatar.src = activeUser.photoURL || "";
+      authName.textContent = activeUser.displayName || activeUser.email || "Google hesabı";
+      authMode.textContent = "Buluta kaydediliyor";
+      signInBtn.textContent = "Bağlı";
+      signInBtn.disabled = true;
+      signOutBtn.style.display = "block";
+    }
+
     function persist(message = "Kaydedildi.") {
       localStorage.setItem("gunluk-alan", JSON.stringify(store));
       saveState.textContent = message;
+      saveSelectedDayToCloud().catch(() => {
+        saveState.textContent = "Yerel kaydedildi.";
+      });
       window.clearTimeout(persist._timer);
       persist._timer = window.setTimeout(() => {
         saveState.textContent = "Hazır.";
@@ -795,7 +1002,7 @@
         tasks.innerHTML = data.tasks.map((task) => `
           <article class="task ${task.done ? "done" : ""}" data-id="${task.id}">
             <button class="check" data-action="toggle" aria-label="Tamamlandı">${task.done ? "✓" : "✓"}</button>
-            <div class="task-text">${task.text}</div>
+            <div class="task-text">${escapeHtml(task.text)}</div>
             <button class="delete" data-action="delete">Sil</button>
           </article>
         `).join("");
@@ -893,6 +1100,45 @@
       await navigator.clipboard.writeText(lines.join("\n"));
       saveState.textContent = "Gün kopyalandı.";
     });
+
+    signInBtn.addEventListener("click", async () => {
+      if (!auth) return;
+      saveState.textContent = "Google bekleniyor...";
+      try {
+        const provider = new GoogleAuthProvider();
+        await signInWithPopup(auth, provider);
+      } catch (error) {
+        saveState.textContent = "Giriş tamamlanmadı.";
+      }
+    });
+
+    signOutBtn.addEventListener("click", async () => {
+      if (!auth) return;
+      await signOut(auth);
+    });
+
+    if (auth) {
+      onAuthStateChanged(auth, async (user) => {
+        activeUser = user;
+        renderAuth();
+
+        if (user) {
+          saveState.textContent = "Notlar yükleniyor...";
+          try {
+            await loadCloudStore(user);
+            saveState.textContent = "Bulut bağlı.";
+          } catch (error) {
+            saveState.textContent = "Yerel modda kaldı.";
+          }
+        } else {
+          saveState.textContent = "Yerel mod.";
+        }
+
+        renderDay();
+      });
+    } else {
+      renderAuth();
+    }
 
     renderDay();
   </script>
