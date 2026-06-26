@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Günlük Alan</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17191c;
+      --muted: #697179;
+      --line: #d9e0e6;
+      --paper: #f3f6f8;
+      --card: #ffffff;
+      --green: #176b58;
+      --blue: #2d62c8;
+      --coral: #c94f3c;
+      --amber: #aa6d12;
+      --shadow: 0 18px 42px rgba(21, 28, 35, 0.11);
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      background: var(--paper);
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(243, 246, 248, 0.86), rgba(243, 246, 248, 0.97)),
+        url("https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=1800&q=80") center / cover fixed;
+    }
+
+    button, input, textarea {
+      font: inherit;
+    }
+
+    button {
+      min-height: 46px;
+      border: 1px solid var(--line);
+      background: var(--card);
+      color: var(--ink);
+      font-weight: 850;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    button:active { transform: translateY(1px); }
+
+    .page {
+      width: min(1120px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 18px 0 calc(22px + env(safe-area-inset-bottom));
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: end;
+      margin-bottom: 16px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid rgba(23, 25, 28, 0.12);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2.1rem, 7vw, 4.4rem);
+      line-height: 0.95;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 8px 0 0;
+      max-width: 690px;
+      color: #3e464e;
+      line-height: 1.45;
+    }
+
+    .today-chip {
+      padding: 10px 12px;
+      border: 1px solid rgba(23, 25, 28, 0.12);
+      background: rgba(255, 255, 255, 0.78);
+      color: var(--muted);
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(300px, 0.88fr) minmax(0, 1.12fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.93);
+      border: 1px solid rgba(23, 25, 28, 0.11);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .calendar {
+      padding: 14px;
+      position: sticky;
+      top: 14px;
+    }
+
+    .monthbar {
+      display: grid;
+      grid-template-columns: 46px 1fr 46px;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .month-title {
+      text-align: center;
+      font-size: 1.08rem;
+      font-weight: 950;
+      text-transform: capitalize;
+    }
+
+    .weekdays, .days {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .weekdays {
+      margin-bottom: 7px;
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-weight: 900;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    .day {
+      aspect-ratio: 1;
+      min-height: 42px;
+      display: grid;
+      place-items: center;
+      position: relative;
+      border-color: transparent;
+      background: #f9fbfc;
+      font-weight: 900;
+    }
+
+    .day.other {
+      color: #a5adb4;
+      background: rgba(249, 251, 252, 0.55);
+    }
+
+    .day.today {
+      border-color: rgba(45, 98, 200, 0.55);
+      color: var(--blue);
+    }
+
+    .day.selected {
+      background: var(--green);
+      color: white;
+    }
+
+    .day.has-note::after {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--coral);
+      position: absolute;
+      bottom: 7px;
+      right: 7px;
+    }
+
+    .day.selected.has-note::after {
+      background: #fff;
+    }
+
+    .quick-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .soft {
+      color: var(--blue);
+      border-color: rgba(45, 98, 200, 0.28);
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .editor {
+      display: grid;
+      gap: 14px;
+      padding: 16px;
+    }
+
+    .editor-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: start;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .selected-date {
+      display: grid;
+      gap: 4px;
+    }
+
+    .eyebrow {
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: clamp(1.6rem, 5vw, 3rem);
+      line-height: 1;
+      letter-spacing: 0;
+      text-transform: capitalize;
+    }
+
+    .save-state {
+      color: var(--muted);
+      font-size: 0.9rem;
+      white-space: nowrap;
+      padding-top: 4px;
+    }
+
+    .section {
+      display: grid;
+      gap: 8px;
+    }
+
+    label {
+      color: var(--muted);
+      font-weight: 850;
+      font-size: 0.86rem;
+    }
+
+    input, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: #fbfcfd;
+      color: var(--ink);
+      outline: none;
+    }
+
+    input {
+      min-height: 48px;
+      padding: 10px 12px;
+    }
+
+    textarea {
+      min-height: 210px;
+      resize: vertical;
+      padding: 13px;
+      line-height: 1.5;
+    }
+
+    input:focus, textarea:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(45, 98, 200, 0.12);
+    }
+
+    .task-form {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+    }
+
+    .primary {
+      min-width: 112px;
+      padding: 0 14px;
+      color: white;
+      background: var(--blue);
+      border-color: var(--blue);
+    }
+
+    .tasks {
+      display: grid;
+      gap: 8px;
+    }
+
+    .task {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 10px;
+      align-items: center;
+      min-height: 48px;
+      padding: 9px 10px;
+      border: 1px solid var(--line);
+      background: #fbfcfd;
+    }
+
+    .check {
+      width: 24px;
+      height: 24px;
+      display: grid;
+      place-items: center;
+      border: 2px solid var(--green);
+      color: transparent;
+      font-weight: 950;
+      user-select: none;
+    }
+
+    .task.done .check {
+      color: white;
+      background: var(--green);
+    }
+
+    .task-text {
+      overflow-wrap: anywhere;
+      font-weight: 760;
+    }
+
+    .task.done .task-text {
+      color: var(--muted);
+      text-decoration: line-through;
+    }
+
+    .delete {
+      min-height: 34px;
+      padding: 0 10px;
+      border-color: rgba(201, 79, 60, 0.25);
+      background: rgba(201, 79, 60, 0.06);
+      color: var(--coral);
+      font-size: 0.86rem;
+    }
+
+    .empty {
+      padding: 14px;
+      color: var(--muted);
+      border: 1px dashed var(--line);
+      background: rgba(251, 252, 253, 0.7);
+      line-height: 1.45;
+    }
+
+    .tools {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      padding-top: 4px;
+    }
+
+    .danger {
+      color: var(--coral);
+      border-color: rgba(201, 79, 60, 0.28);
+      background: rgba(255, 255, 255, 0.7);
+    }
+
+    @media (max-width: 860px) {
+      body { background-attachment: scroll; }
+
+      .page {
+        width: min(100% - 20px, 680px);
+        padding-top: 10px;
+      }
+
+      header {
+        grid-template-columns: 1fr;
+        align-items: start;
+      }
+
+      .today-chip {
+        width: fit-content;
+        white-space: normal;
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .calendar {
+        position: static;
+      }
+
+      .editor-head {
+        flex-direction: column;
+      }
+
+      .save-state {
+        white-space: normal;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .page {
+        width: 100%;
+        padding-left: 10px;
+        padding-right: 10px;
+      }
+
+      .weekdays, .days {
+        gap: 4px;
+      }
+
+      .day {
+        min-height: 39px;
+        font-size: 0.9rem;
+      }
+
+      .task-form {
+        grid-template-columns: 1fr;
+      }
+
+      .primary {
+        width: 100%;
+      }
+
+      .tools {
+        flex-direction: column;
+      }
+
+      .tools button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <div>
+        <h1>Günlük Alan</h1>
+        <p class="subtitle">Takvimden günü seç, o güne ait notunu ve küçük yapılacaklarını tek yerde tut.</p>
+      </div>
+      <div class="today-chip" id="todayChip"></div>
+    </header>
+
+    <section class="layout" aria-label="Takvim ve not uygulaması">
+      <aside class="card calendar">
+        <div class="monthbar">
+          <button id="prevMonth" aria-label="Önceki ay">‹</button>
+          <div class="month-title" id="monthTitle"></div>
+          <button id="nextMonth" aria-label="Sonraki ay">›</button>
+        </div>
+        <div class="weekdays" aria-hidden="true">
+          <div>Pzt</div><div>Sal</div><div>Çar</div><div>Per</div><div>Cum</div><div>Cmt</div><div>Paz</div>
+        </div>
+        <div class="days" id="days"></div>
+        <div class="quick-row">
+          <button class="soft" id="goToday">Bugün</button>
+          <button class="soft" id="newBlank">Boşalt</button>
+        </div>
+      </aside>
+
+      <section class="card editor">
+        <div class="editor-head">
+          <div class="selected-date">
+            <div class="eyebrow">Seçili gün</div>
+            <h2 id="selectedTitle"></h2>
+          </div>
+          <div class="save-state" id="saveState">Hazır.</div>
+        </div>
+
+        <div class="section">
+          <label for="dailyNote">Günün notu</label>
+          <textarea id="dailyNote" placeholder="Bugün ne önemli? Kısa düşünceler, toplantı notları, fikirler..."></textarea>
+        </div>
+
+        <div class="section">
+          <label for="taskInput">Küçük yapılacak</label>
+          <form class="task-form" id="taskForm">
+            <input id="taskInput" placeholder="Örn: faturayı öde, kitapçıya uğra" />
+            <button class="primary" type="submit">Ekle</button>
+          </form>
+          <div class="tasks" id="tasks"></div>
+        </div>
+
+        <div class="tools">
+          <button class="soft" id="copyDay">Günü kopyala</button>
+          <button class="danger" id="clearDay">Bu günü temizle</button>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const todayChip = document.querySelector("#todayChip");
+    const monthTitle = document.querySelector("#monthTitle");
+    const days = document.querySelector("#days");
+    const selectedTitle = document.querySelector("#selectedTitle");
+    const dailyNote = document.querySelector("#dailyNote");
+    const saveState = document.querySelector("#saveState");
+    const taskForm = document.querySelector("#taskForm");
+    const taskInput = document.querySelector("#taskInput");
+    const tasks = document.querySelector("#tasks");
+    const prevMonth = document.querySelector("#prevMonth");
+    const nextMonth = document.querySelector("#nextMonth");
+    const goToday = document.querySelector("#goToday");
+    const newBlank = document.querySelector("#newBlank");
+    const copyDay = document.querySelector("#copyDay");
+    const clearDay = document.querySelector("#clearDay");
+
+    const today = new Date();
+    let cursor = new Date(today.getFullYear(), today.getMonth(), 1);
+    let selected = toKey(today);
+    let store = JSON.parse(localStorage.getItem("gunluk-alan") || "{}");
+
+    todayChip.textContent = new Intl.DateTimeFormat("tr-TR", {
+      weekday: "long",
+      day: "numeric",
+      month: "long"
+    }).format(today);
+
+    function toKey(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    function fromKey(key) {
+      const [year, month, day] = key.split("-").map(Number);
+      return new Date(year, month - 1, day);
+    }
+
+    function getDayData(key = selected) {
+      if (!store[key]) store[key] = { note: "", tasks: [] };
+      return store[key];
+    }
+
+    function persist(message = "Kaydedildi.") {
+      localStorage.setItem("gunluk-alan", JSON.stringify(store));
+      saveState.textContent = message;
+      window.clearTimeout(persist._timer);
+      persist._timer = window.setTimeout(() => {
+        saveState.textContent = "Hazır.";
+      }, 1200);
+      renderCalendar();
+    }
+
+    function formatSelectedTitle() {
+      selectedTitle.textContent = new Intl.DateTimeFormat("tr-TR", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric"
+      }).format(fromKey(selected));
+    }
+
+    function hasContent(key) {
+      const data = store[key];
+      return Boolean(data && (data.note.trim() || data.tasks.length));
+    }
+
+    function renderCalendar() {
+      monthTitle.textContent = new Intl.DateTimeFormat("tr-TR", {
+        month: "long",
+        year: "numeric"
+      }).format(cursor);
+
+      const firstDay = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+      const startOffset = (firstDay.getDay() + 6) % 7;
+      const start = new Date(cursor.getFullYear(), cursor.getMonth(), 1 - startOffset);
+      const cells = [];
+
+      for (let index = 0; index < 42; index += 1) {
+        const date = new Date(start);
+        date.setDate(start.getDate() + index);
+        const key = toKey(date);
+        const classes = ["day"];
+        if (date.getMonth() !== cursor.getMonth()) classes.push("other");
+        if (key === toKey(today)) classes.push("today");
+        if (key === selected) classes.push("selected");
+        if (hasContent(key)) classes.push("has-note");
+        cells.push(`<button class="${classes.join(" ")}" data-date="${key}" aria-label="${key}">${date.getDate()}</button>`);
+      }
+
+      days.innerHTML = cells.join("");
+    }
+
+    function renderDay() {
+      const data = getDayData();
+      formatSelectedTitle();
+      dailyNote.value = data.note;
+
+      if (!data.tasks.length) {
+        tasks.innerHTML = '<div class="empty">Bu gün için yapılacak yok. Küçük bir şey ekleyebilirsin.</div>';
+      } else {
+        tasks.innerHTML = data.tasks.map((task) => `
+          <article class="task ${task.done ? "done" : ""}" data-id="${task.id}">
+            <button class="check" data-action="toggle" aria-label="Tamamlandı">${task.done ? "✓" : "✓"}</button>
+            <div class="task-text">${task.text}</div>
+            <button class="delete" data-action="delete">Sil</button>
+          </article>
+        `).join("");
+      }
+
+      renderCalendar();
+    }
+
+    days.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-date]");
+      if (!button) return;
+      selected = button.dataset.date;
+      const date = fromKey(selected);
+      cursor = new Date(date.getFullYear(), date.getMonth(), 1);
+      renderDay();
+    });
+
+    dailyNote.addEventListener("input", () => {
+      getDayData().note = dailyNote.value;
+      persist();
+    });
+
+    taskForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const text = taskInput.value.trim();
+      if (!text) return;
+      getDayData().tasks.push({ id: crypto.randomUUID(), text, done: false });
+      taskInput.value = "";
+      persist("Görev eklendi.");
+      renderDay();
+    });
+
+    tasks.addEventListener("click", (event) => {
+      const action = event.target.dataset.action;
+      const row = event.target.closest("[data-id]");
+      if (!action || !row) return;
+      const data = getDayData();
+      const task = data.tasks.find((item) => item.id === row.dataset.id);
+      if (action === "toggle" && task) task.done = !task.done;
+      if (action === "delete") data.tasks = data.tasks.filter((item) => item.id !== row.dataset.id);
+      persist(action === "toggle" ? "Güncellendi." : "Silindi.");
+      renderDay();
+    });
+
+    prevMonth.addEventListener("click", () => {
+      cursor = new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1);
+      renderCalendar();
+    });
+
+    nextMonth.addEventListener("click", () => {
+      cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+      renderCalendar();
+    });
+
+    goToday.addEventListener("click", () => {
+      selected = toKey(today);
+      cursor = new Date(today.getFullYear(), today.getMonth(), 1);
+      renderDay();
+    });
+
+    newBlank.addEventListener("click", () => {
+      dailyNote.focus();
+      dailyNote.select();
+    });
+
+    clearDay.addEventListener("click", () => {
+      if (!hasContent(selected)) return;
+      const confirmed = confirm("Bu güne ait not ve yapılacaklar silinsin mi?");
+      if (!confirmed) return;
+      delete store[selected];
+      persist("Gün temizlendi.");
+      renderDay();
+    });
+
+    copyDay.addEventListener("click", async () => {
+      const data = getDayData();
+      const lines = [
+        selectedTitle.textContent,
+        "",
+        data.note || "Not yok.",
+        "",
+        "Yapılacaklar:",
+        ...(data.tasks.length ? data.tasks.map((task) => `${task.done ? "[x]" : "[ ]"} ${task.text}`) : ["Yok."])
+      ];
+      await navigator.clipboard.writeText(lines.join("\n"));
+      saveState.textContent = "Gün kopyalandı.";
+    });
+
+    renderDay();
+  </script>
+</body>
+</html>
