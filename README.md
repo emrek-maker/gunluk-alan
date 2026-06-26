@@ -11,10 +11,15 @@ Takvim ve gunluk notlari birlestiren sade, mobil uyumlu bir web uygulamasi.
 - Secili gunu kopyalama
 - Verileri tarayicida saklama
 - Supabase ile Google girisi ve kullaniciya ozel bulut kaydi
+- PWA destegi ile telefonda ana ekrana ekleme
 
 ## Canli Site
 
 https://gunluk-alan.vercel.app
+
+## Telefonda Uygulama Gibi Kullanma
+
+iPhone'da Safari ile siteyi ac, paylas butonuna bas ve `Ana Ekrana Ekle` sec. Android/Chrome desteklediginde ekranda `Yukle` secenegi gorunur.
 
 ## Supabase Kurulumu
 
