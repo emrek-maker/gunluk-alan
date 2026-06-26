@@ -26,7 +26,9 @@
       --amber: #a66f17;
       --violet: #6a5acd;
       --radius: 8px;
+      --radius-lg: 14px;
       --shadow: 0 18px 46px rgba(21, 28, 35, 0.12);
+      --shadow-soft: 0 10px 28px rgba(21, 28, 35, 0.09);
     }
 
     * { box-sizing: border-box; }
@@ -44,6 +46,16 @@
       background:
         linear-gradient(135deg, rgba(242, 245, 247, 0.88), rgba(247, 250, 249, 0.96)),
         url("https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=1800&q=80") center / cover fixed;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(23, 105, 86, 0.10), transparent 28%, rgba(201, 81, 60, 0.08) 72%, transparent),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%);
     }
 
     button, input, textarea {
@@ -73,6 +85,8 @@
       width: min(1120px, calc(100% - 28px));
       margin: 0 auto;
       padding: 20px 0 calc(24px + env(safe-area-inset-bottom));
+      position: relative;
+      z-index: 1;
     }
 
     header {
@@ -81,8 +95,12 @@
       gap: 16px;
       align-items: center;
       margin-bottom: 16px;
-      padding-bottom: 14px;
-      border-bottom: 1px solid rgba(21, 23, 27, 0.11);
+      padding: 14px;
+      border: 1px solid rgba(21, 23, 27, 0.1);
+      border-radius: var(--radius-lg);
+      background: rgba(255, 255, 255, 0.78);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(14px);
     }
 
     .brand {
@@ -99,7 +117,9 @@
       display: grid;
       place-items: center;
       border-radius: var(--radius);
-      background: linear-gradient(135deg, var(--green), var(--blue));
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.18), transparent 45%),
+        linear-gradient(135deg, var(--green), var(--blue));
       color: white;
       font-weight: 950;
       box-shadow: 0 14px 30px rgba(47, 100, 207, 0.2);
@@ -189,6 +209,32 @@
       border-color: rgba(201, 81, 60, 0.24);
     }
 
+    .command-bar {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      padding: 10px;
+      margin-bottom: 16px;
+    }
+
+    .command-bar button {
+      min-height: 46px;
+      display: grid;
+      place-items: center;
+      padding: 8px 6px;
+      color: #26313a;
+      background: #fbfcfd;
+      font-size: 0.9rem;
+    }
+
+    .command-bar button strong {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
     .week-strip {
       display: grid;
       grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -227,6 +273,7 @@
       background: #182a41;
       border-color: #182a41;
       color: white;
+      box-shadow: 0 10px 24px rgba(24, 42, 65, 0.2);
     }
 
     .week-day.selected span:first-child {
@@ -290,7 +337,7 @@
     .card {
       background: rgba(255, 255, 255, 0.93);
       border: 1px solid rgba(21, 23, 27, 0.1);
-      border-radius: var(--radius);
+      border-radius: var(--radius-lg);
       box-shadow: var(--shadow);
       backdrop-filter: blur(12px);
     }
@@ -403,8 +450,15 @@
       justify-content: space-between;
       gap: 12px;
       align-items: start;
-      padding-bottom: 12px;
+      padding: 18px;
       border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      z-index: 4;
+      margin: -18px -18px 0;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      backdrop-filter: blur(14px);
     }
 
     .selected-date {
@@ -454,6 +508,7 @@
       border: 1px solid var(--line);
       border-radius: var(--radius);
       background: #fbfcfd;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
     }
 
     .stat strong {
@@ -465,6 +520,19 @@
     .section {
       display: grid;
       gap: 8px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .section-hint {
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 760;
     }
 
     label {
@@ -492,6 +560,7 @@
       resize: vertical;
       padding: 15px;
       line-height: 1.58;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
     }
 
     input:focus, textarea:focus {
@@ -529,6 +598,12 @@
       border: 1px solid var(--line);
       border-radius: var(--radius);
       background: #fbfcfd;
+      transition: border-color 140ms ease, transform 140ms ease, background 140ms ease;
+    }
+
+    .task:hover {
+      border-color: rgba(23, 105, 86, 0.22);
+      background: #ffffff;
     }
 
     .check {
@@ -595,6 +670,7 @@
       .page {
         width: min(100% - 20px, 680px);
         padding-top: 10px;
+        padding-bottom: calc(88px + env(safe-area-inset-bottom));
       }
 
       header {
@@ -646,6 +722,16 @@
 
       .stats {
         grid-template-columns: 1fr;
+      }
+
+      .command-bar {
+        position: fixed;
+        left: 10px;
+        right: 10px;
+        bottom: max(10px, env(safe-area-inset-bottom));
+        z-index: 30;
+        margin: 0;
+        box-shadow: 0 18px 44px rgba(21, 28, 35, 0.22);
       }
     }
 
@@ -733,6 +819,13 @@
       </div>
     </section>
 
+    <nav class="card command-bar" id="commandBar" aria-label="Hızlı işlemler">
+      <button type="button" data-command="today"><strong>Git</strong>Bugün</button>
+      <button type="button" data-command="note"><strong>Yaz</strong>Not</button>
+      <button type="button" data-command="task"><strong>Ekle</strong>Görev</button>
+      <button type="button" data-command="copy"><strong>Al</strong>Kopya</button>
+    </nav>
+
     <nav class="card week-strip" id="weekStrip" aria-label="Haftalık hızlı seçim"></nav>
 
     <section class="layout" aria-label="Takvim ve not uygulaması">
@@ -776,13 +869,19 @@
           </div>
         </div>
 
-        <div class="section">
-          <label for="dailyNote">Günün notu</label>
+        <div class="section" id="noteSection">
+          <div class="section-head">
+            <label for="dailyNote">Günün notu</label>
+            <span class="section-hint">Otomatik kaydedilir</span>
+          </div>
           <textarea id="dailyNote" placeholder="Bugün ne önemli? Kısa düşünceler, toplantı notları, fikirler..."></textarea>
         </div>
 
-        <div class="section">
-          <label for="taskInput">Küçük yapılacak</label>
+        <div class="section" id="taskSection">
+          <div class="section-head">
+            <label for="taskInput">Küçük yapılacak</label>
+            <span class="section-hint">Tek satır yeter</span>
+          </div>
           <form class="task-form" id="taskForm">
             <input id="taskInput" placeholder="Örn: faturayı öde, kitapçıya uğra" />
             <button class="primary" type="submit">Ekle</button>
@@ -831,6 +930,9 @@
     const installBtn = document.querySelector("#installBtn");
     const installCopy = document.querySelector("#installCopy");
     const dismissInstall = document.querySelector("#dismissInstall");
+    const commandBar = document.querySelector("#commandBar");
+    const noteSection = document.querySelector("#noteSection");
+    const taskSection = document.querySelector("#taskSection");
 
     const today = new Date();
     let cursor = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -1222,6 +1324,33 @@
       ];
       await navigator.clipboard.writeText(lines.join("\n"));
       saveState.textContent = "Gün kopyalandı.";
+    });
+
+    commandBar.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-command]");
+      if (!button) return;
+      const command = button.dataset.command;
+
+      if (command === "today") {
+        selected = toKey(today);
+        cursor = new Date(today.getFullYear(), today.getMonth(), 1);
+        renderDay();
+        document.querySelector(".editor").scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      if (command === "note") {
+        noteSection.scrollIntoView({ behavior: "smooth", block: "center" });
+        window.setTimeout(() => dailyNote.focus(), 260);
+      }
+
+      if (command === "task") {
+        taskSection.scrollIntoView({ behavior: "smooth", block: "center" });
+        window.setTimeout(() => taskInput.focus(), 260);
+      }
+
+      if (command === "copy") {
+        copyDay.click();
+      }
     });
 
     installBtn.addEventListener("click", async () => {
