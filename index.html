@@ -7,16 +7,18 @@
   <style>
     :root {
       color-scheme: light;
-      --ink: #17191c;
-      --muted: #697179;
-      --line: #d9e0e6;
-      --paper: #f3f6f8;
+      --ink: #15171b;
+      --muted: #68717b;
+      --line: #dce2e8;
+      --paper: #f2f5f7;
       --card: #ffffff;
-      --green: #176b58;
-      --blue: #2d62c8;
-      --coral: #c94f3c;
-      --amber: #aa6d12;
-      --shadow: 0 18px 42px rgba(21, 28, 35, 0.11);
+      --green: #176956;
+      --blue: #2f64cf;
+      --coral: #c9513c;
+      --amber: #a66f17;
+      --violet: #6a5acd;
+      --radius: 8px;
+      --shadow: 0 18px 46px rgba(21, 28, 35, 0.12);
     }
 
     * { box-sizing: border-box; }
@@ -32,7 +34,7 @@
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: var(--ink);
       background:
-        linear-gradient(rgba(243, 246, 248, 0.86), rgba(243, 246, 248, 0.97)),
+        linear-gradient(135deg, rgba(242, 245, 247, 0.88), rgba(247, 250, 249, 0.96)),
         url("https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=1800&q=80") center / cover fixed;
     }
 
@@ -43,11 +45,18 @@
     button {
       min-height: 46px;
       border: 1px solid var(--line);
+      border-radius: var(--radius);
       background: var(--card);
       color: var(--ink);
       font-weight: 850;
       cursor: pointer;
       touch-action: manipulation;
+      transition: transform 140ms ease, border-color 140ms ease, box-shadow 140ms ease, background 140ms ease;
+    }
+
+    button:hover {
+      border-color: rgba(21, 23, 27, 0.28);
+      box-shadow: 0 8px 18px rgba(21, 28, 35, 0.08);
     }
 
     button:active { transform: translateY(1px); }
@@ -55,22 +64,42 @@
     .page {
       width: min(1120px, calc(100% - 28px));
       margin: 0 auto;
-      padding: 18px 0 calc(22px + env(safe-area-inset-bottom));
+      padding: 20px 0 calc(24px + env(safe-area-inset-bottom));
     }
 
     header {
       display: grid;
       grid-template-columns: 1fr auto;
       gap: 16px;
-      align-items: end;
+      align-items: center;
       margin-bottom: 16px;
       padding-bottom: 14px;
-      border-bottom: 1px solid rgba(23, 25, 28, 0.12);
+      border-bottom: 1px solid rgba(21, 23, 27, 0.11);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .mark {
+      width: 54px;
+      height: 54px;
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, var(--green), var(--blue));
+      color: white;
+      font-weight: 950;
+      box-shadow: 0 14px 30px rgba(47, 100, 207, 0.2);
     }
 
     h1 {
       margin: 0;
-      font-size: clamp(2.1rem, 7vw, 4.4rem);
+      font-size: clamp(2rem, 6.6vw, 4.1rem);
       line-height: 0.95;
       letter-spacing: 0;
     }
@@ -78,29 +107,86 @@
     .subtitle {
       margin: 8px 0 0;
       max-width: 690px;
-      color: #3e464e;
+      color: #424a53;
       line-height: 1.45;
     }
 
     .today-chip {
       padding: 10px 12px;
-      border: 1px solid rgba(23, 25, 28, 0.12);
+      border: 1px solid rgba(21, 23, 27, 0.12);
+      border-radius: var(--radius);
       background: rgba(255, 255, 255, 0.78);
       color: var(--muted);
       font-weight: 850;
       white-space: nowrap;
     }
 
+    .week-strip {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 8px;
+      padding: 10px;
+      margin-bottom: 16px;
+      overflow: auto;
+    }
+
+    .week-day {
+      min-height: 70px;
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      gap: 4px;
+      padding: 8px 4px;
+      background: #fbfcfd;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      position: relative;
+    }
+
+    .week-day span:first-child {
+      color: var(--muted);
+      font-size: 0.74rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .week-day span:last-child {
+      font-size: 1.18rem;
+      font-weight: 950;
+    }
+
+    .week-day.selected {
+      background: #182a41;
+      border-color: #182a41;
+      color: white;
+    }
+
+    .week-day.selected span:first-child {
+      color: rgba(255, 255, 255, 0.72);
+    }
+
+    .week-day.has-note::after {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--coral);
+      position: absolute;
+      right: 8px;
+      bottom: 8px;
+    }
+
     .layout {
       display: grid;
-      grid-template-columns: minmax(300px, 0.88fr) minmax(0, 1.12fr);
-      gap: 16px;
+      grid-template-columns: minmax(320px, 0.82fr) minmax(0, 1.18fr);
+      gap: 18px;
       align-items: start;
     }
 
     .card {
       background: rgba(255, 255, 255, 0.93);
-      border: 1px solid rgba(23, 25, 28, 0.11);
+      border: 1px solid rgba(21, 23, 27, 0.1);
+      border-radius: var(--radius);
       box-shadow: var(--shadow);
       backdrop-filter: blur(12px);
     }
@@ -117,6 +203,11 @@
       gap: 8px;
       align-items: center;
       margin-bottom: 12px;
+    }
+
+    .monthbar button {
+      font-size: 1.3rem;
+      color: var(--blue);
     }
 
     .month-title {
@@ -148,6 +239,7 @@
       place-items: center;
       position: relative;
       border-color: transparent;
+      border-radius: var(--radius);
       background: #f9fbfc;
       font-weight: 900;
     }
@@ -165,6 +257,7 @@
     .day.selected {
       background: var(--green);
       color: white;
+      box-shadow: 0 10px 22px rgba(23, 105, 86, 0.22);
     }
 
     .day.has-note::after {
@@ -197,8 +290,8 @@
 
     .editor {
       display: grid;
-      gap: 14px;
-      padding: 16px;
+      gap: 16px;
+      padding: 18px;
     }
 
     .editor-head {
@@ -232,10 +325,37 @@
     }
 
     .save-state {
-      color: var(--muted);
+      color: var(--green);
+      background: rgba(23, 105, 86, 0.09);
+      border: 1px solid rgba(23, 105, 86, 0.16);
+      border-radius: 999px;
       font-size: 0.9rem;
+      font-weight: 850;
       white-space: nowrap;
-      padding-top: 4px;
+      padding: 7px 10px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .stat {
+      min-height: 74px;
+      display: grid;
+      align-content: space-between;
+      gap: 6px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fbfcfd;
+    }
+
+    .stat strong {
+      font-size: 1.18rem;
+      line-height: 1.05;
+      overflow-wrap: anywhere;
     }
 
     .section {
@@ -252,6 +372,7 @@
     input, textarea {
       width: 100%;
       border: 1px solid var(--line);
+      border-radius: var(--radius);
       background: #fbfcfd;
       color: var(--ink);
       outline: none;
@@ -263,10 +384,10 @@
     }
 
     textarea {
-      min-height: 210px;
+      min-height: 250px;
       resize: vertical;
-      padding: 13px;
-      line-height: 1.5;
+      padding: 15px;
+      line-height: 1.58;
     }
 
     input:focus, textarea:focus {
@@ -286,6 +407,7 @@
       color: white;
       background: var(--blue);
       border-color: var(--blue);
+      box-shadow: 0 12px 24px rgba(47, 100, 207, 0.18);
     }
 
     .tasks {
@@ -301,6 +423,7 @@
       min-height: 48px;
       padding: 9px 10px;
       border: 1px solid var(--line);
+      border-radius: var(--radius);
       background: #fbfcfd;
     }
 
@@ -310,6 +433,7 @@
       display: grid;
       place-items: center;
       border: 2px solid var(--green);
+      border-radius: 7px;
       color: transparent;
       font-weight: 950;
       user-select: none;
@@ -343,6 +467,7 @@
       padding: 14px;
       color: var(--muted);
       border: 1px dashed var(--line);
+      border-radius: var(--radius);
       background: rgba(251, 252, 253, 0.7);
       line-height: 1.45;
     }
@@ -373,6 +498,10 @@
         align-items: start;
       }
 
+      .brand {
+        align-items: flex-start;
+      }
+
       .today-chip {
         width: fit-content;
         white-space: normal;
@@ -380,6 +509,10 @@
 
       .layout {
         grid-template-columns: 1fr;
+      }
+
+      .week-strip {
+        grid-template-columns: repeat(7, minmax(74px, 1fr));
       }
 
       .calendar {
@@ -392,6 +525,10 @@
 
       .save-state {
         white-space: normal;
+      }
+
+      .stats {
+        grid-template-columns: 1fr;
       }
     }
 
@@ -409,6 +546,11 @@
       .day {
         min-height: 39px;
         font-size: 0.9rem;
+      }
+
+      .mark {
+        width: 46px;
+        height: 46px;
       }
 
       .task-form {
@@ -432,12 +574,17 @@
 <body>
   <main class="page">
     <header>
-      <div>
-        <h1>Günlük Alan</h1>
-        <p class="subtitle">Takvimden günü seç, o güne ait notunu ve küçük yapılacaklarını tek yerde tut.</p>
+      <div class="brand">
+        <div class="mark" aria-hidden="true">GA</div>
+        <div>
+          <h1>Günlük Alan</h1>
+          <p class="subtitle">Günü yakala, hafif tut.</p>
+        </div>
       </div>
       <div class="today-chip" id="todayChip"></div>
     </header>
+
+    <nav class="card week-strip" id="weekStrip" aria-label="Haftalık hızlı seçim"></nav>
 
     <section class="layout" aria-label="Takvim ve not uygulaması">
       <aside class="card calendar">
@@ -465,6 +612,21 @@
           <div class="save-state" id="saveState">Hazır.</div>
         </div>
 
+        <div class="stats" aria-label="Gün özeti">
+          <div class="stat">
+            <div class="eyebrow">Not</div>
+            <strong id="noteStatus">Boş</strong>
+          </div>
+          <div class="stat">
+            <div class="eyebrow">Görev</div>
+            <strong id="taskTotal">0</strong>
+          </div>
+          <div class="stat">
+            <div class="eyebrow">Biten</div>
+            <strong id="taskDone">0</strong>
+          </div>
+        </div>
+
         <div class="section">
           <label for="dailyNote">Günün notu</label>
           <textarea id="dailyNote" placeholder="Bugün ne önemli? Kısa düşünceler, toplantı notları, fikirler..."></textarea>
@@ -489,6 +651,7 @@
 
   <script>
     const todayChip = document.querySelector("#todayChip");
+    const weekStrip = document.querySelector("#weekStrip");
     const monthTitle = document.querySelector("#monthTitle");
     const days = document.querySelector("#days");
     const selectedTitle = document.querySelector("#selectedTitle");
@@ -503,6 +666,9 @@
     const newBlank = document.querySelector("#newBlank");
     const copyDay = document.querySelector("#copyDay");
     const clearDay = document.querySelector("#clearDay");
+    const noteStatus = document.querySelector("#noteStatus");
+    const taskTotal = document.querySelector("#taskTotal");
+    const taskDone = document.querySelector("#taskDone");
 
     const today = new Date();
     let cursor = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -540,6 +706,8 @@
         saveState.textContent = "Hazır.";
       }, 1200);
       renderCalendar();
+      renderWeekStrip();
+      renderStats();
     }
 
     function formatSelectedTitle() {
@@ -582,10 +750,44 @@
       days.innerHTML = cells.join("");
     }
 
+    function renderWeekStrip() {
+      const selectedDate = fromKey(selected);
+      const start = new Date(selectedDate);
+      start.setDate(selectedDate.getDate() - ((selectedDate.getDay() + 6) % 7));
+      const dayFormatter = new Intl.DateTimeFormat("tr-TR", { weekday: "short" });
+      const cells = [];
+
+      for (let index = 0; index < 7; index += 1) {
+        const date = new Date(start);
+        date.setDate(start.getDate() + index);
+        const key = toKey(date);
+        const classes = ["week-day"];
+        if (key === selected) classes.push("selected");
+        if (hasContent(key)) classes.push("has-note");
+        cells.push(`
+          <button class="${classes.join(" ")}" data-week-date="${key}" aria-label="${key}">
+            <span>${dayFormatter.format(date)}</span>
+            <span>${date.getDate()}</span>
+          </button>
+        `);
+      }
+
+      weekStrip.innerHTML = cells.join("");
+    }
+
+    function renderStats() {
+      const data = getDayData();
+      const doneCount = data.tasks.filter((task) => task.done).length;
+      noteStatus.textContent = data.note.trim() ? `${data.note.trim().length} karakter` : "Boş";
+      taskTotal.textContent = String(data.tasks.length);
+      taskDone.textContent = String(doneCount);
+    }
+
     function renderDay() {
       const data = getDayData();
       formatSelectedTitle();
       dailyNote.value = data.note;
+      renderStats();
 
       if (!data.tasks.length) {
         tasks.innerHTML = '<div class="empty">Bu gün için yapılacak yok. Küçük bir şey ekleyebilirsin.</div>';
@@ -600,12 +802,22 @@
       }
 
       renderCalendar();
+      renderWeekStrip();
     }
 
     days.addEventListener("click", (event) => {
       const button = event.target.closest("[data-date]");
       if (!button) return;
       selected = button.dataset.date;
+      const date = fromKey(selected);
+      cursor = new Date(date.getFullYear(), date.getMonth(), 1);
+      renderDay();
+    });
+
+    weekStrip.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-week-date]");
+      if (!button) return;
+      selected = button.dataset.weekDate;
       const date = fromKey(selected);
       cursor = new Date(date.getFullYear(), date.getMonth(), 1);
       renderDay();
