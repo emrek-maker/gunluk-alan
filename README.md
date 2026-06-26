@@ -10,30 +10,26 @@ Takvim ve gunluk notlari birlestiren sade, mobil uyumlu bir web uygulamasi.
 - Gorevleri tamamlandi olarak isaretleme
 - Secili gunu kopyalama
 - Verileri tarayicida saklama
-- Google ile giris ve kullaniciya ozel bulut kaydi
+- Supabase ile Google girisi ve kullaniciya ozel bulut kaydi
 
 ## Canli Site
 
 https://gunluk-alan-vercel.vercel.app
 
-## Google Girisi Kurulumu
+## Supabase Kurulumu
 
-1. Firebase Console'da bir proje olustur.
-2. Authentication bolumunde Google provider'ini etkinlestir.
-3. Authentication > Settings > Authorized domains alanina `gunluk-alan-vercel.vercel.app` ekle.
-4. Firestore Database olustur.
-5. Project settings > Web app config degerlerini `firebase-config.js` dosyasina yaz.
+1. Supabase'de yeni proje olustur.
+2. SQL Editor'da `supabase-schema.sql` dosyasindaki SQL'i calistir.
+3. Authentication > Providers alaninda Google provider'ini etkinlestir.
+4. Authentication > URL Configuration alaninda Site URL olarak `https://gunluk-alan-vercel.vercel.app` gir.
+5. Redirect URLs alanina `https://gunluk-alan-vercel.vercel.app` ekle.
+6. Project Settings > API alanindaki Project URL ve anon publishable key degerlerini `supabase-config.js` dosyasina yaz.
 
-Firestore Rules:
+`supabase-config.js`:
 
-```txt
-rules_version = '2';
-
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /users/{userId}/days/{dayId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-  }
-}
+```js
+window.GUNLUK_ALAN_SUPABASE_CONFIG = {
+  url: "https://PROJECT_ID.supabase.co",
+  anonKey: "..."
+};
 ```

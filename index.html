@@ -730,24 +730,9 @@
     </section>
   </main>
 
-  <script src="./firebase-config.js"></script>
+  <script src="./supabase-config.js"></script>
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-    import {
-      GoogleAuthProvider,
-      getAuth,
-      onAuthStateChanged,
-      signInWithPopup,
-      signOut
-    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-    import {
-      collection,
-      deleteDoc,
-      doc,
-      getDocs,
-      getFirestore,
-      setDoc
-    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+    import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
     const todayChip = document.querySelector("#todayChip");
     const weekStrip = document.querySelector("#weekStrip");
@@ -779,18 +764,15 @@
     let cursor = new Date(today.getFullYear(), today.getMonth(), 1);
     let selected = toKey(today);
     let store = JSON.parse(localStorage.getItem("gunluk-alan") || "{}");
-    let auth = null;
-    let db = null;
+    let supabase = null;
     let activeUser = null;
     let cloudReady = false;
 
-    const firebaseConfig = window.GUNLUK_ALAN_FIREBASE_CONFIG || {};
-    const hasFirebaseConfig = Boolean(firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.authDomain);
+    const supabaseConfig = window.GUNLUK_ALAN_SUPABASE_CONFIG || {};
+    const hasSupabaseConfig = Boolean(supabaseConfig.url && supabaseConfig.anonKey);
 
-    if (hasFirebaseConfig) {
-      const app = initializeApp(firebaseConfig);
-      auth = getAuth(app);
-      db = getFirestore(app);
+    if (hasSupabaseConfig) {
+      supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
       cloudReady = true;
     }
 
@@ -829,28 +811,43 @@
     async function saveSelectedDayToCloud() {
       if (!cloudReady || !activeUser) return;
       const data = getDayData();
-      const ref = doc(db, "users", activeUser.uid, "days", selected);
 
       if (!data.note.trim() && !data.tasks.length) {
-        await deleteDoc(ref);
+        const { error } = await supabase
+          .from("daily_notes")
+          .delete()
+          .eq("user_id", activeUser.id)
+          .eq("day_key", selected);
+        if (error) throw error;
         return;
       }
 
-      await setDoc(ref, {
-        note: data.note,
-        tasks: data.tasks,
-        updatedAt: new Date().toISOString()
-      });
+      const { error } = await supabase
+        .from("daily_notes")
+        .upsert({
+          user_id: activeUser.id,
+          day_key: selected,
+          note: data.note,
+          tasks: data.tasks,
+          updated_at: new Date().toISOString()
+        }, { onConflict: "user_id,day_key" });
+
+      if (error) throw error;
     }
 
     async function loadCloudStore(user) {
-      const snapshot = await getDocs(collection(db, "users", user.uid, "days"));
+      const { data, error } = await supabase
+        .from("daily_notes")
+        .select("day_key,note,tasks")
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+
       const nextStore = {};
-      snapshot.forEach((dayDoc) => {
-        const data = dayDoc.data();
-        nextStore[dayDoc.id] = {
-          note: data.note || "",
-          tasks: Array.isArray(data.tasks) ? data.tasks : []
+      data.forEach((row) => {
+        nextStore[row.day_key] = {
+          note: row.note || "",
+          tasks: Array.isArray(row.tasks) ? row.tasks : []
         };
       });
 
@@ -858,24 +855,43 @@
         store = nextStore;
         localStorage.setItem("gunluk-alan", JSON.stringify(store));
       } else {
-        await Promise.all(Object.keys(store).map(async (key) => {
-          const data = store[key];
-          if (!data || (!data.note?.trim() && !data.tasks?.length)) return;
-          await setDoc(doc(db, "users", user.uid, "days", key), {
-            note: data.note || "",
-            tasks: Array.isArray(data.tasks) ? data.tasks : [],
-            updatedAt: new Date().toISOString()
-          });
-        }));
+        const rows = Object.keys(store)
+          .map((key) => {
+            const data = store[key];
+            if (!data || (!data.note?.trim() && !data.tasks?.length)) return null;
+            return {
+              user_id: user.id,
+              day_key: key,
+              note: data.note || "",
+              tasks: Array.isArray(data.tasks) ? data.tasks : [],
+              updated_at: new Date().toISOString()
+            };
+          })
+          .filter(Boolean);
+
+        if (rows.length) {
+          const { error: upsertError } = await supabase
+            .from("daily_notes")
+            .upsert(rows, { onConflict: "user_id,day_key" });
+          if (upsertError) throw upsertError;
+        }
       }
     }
 
+    function getUserName(user) {
+      return user.user_metadata?.full_name || user.user_metadata?.name || user.email || "Google hesabı";
+    }
+
+    function getUserAvatar(user) {
+      return user.user_metadata?.avatar_url || user.user_metadata?.picture || "";
+    }
+
     function renderAuth() {
-      if (!hasFirebaseConfig) {
+      if (!hasSupabaseConfig) {
         authUser.style.display = "grid";
         authAvatar.removeAttribute("src");
         authName.textContent = "Kurulum gerekli";
-        authMode.textContent = "Firebase ayarı bekliyor";
+        authMode.textContent = "Supabase ayarı bekliyor";
         signInBtn.textContent = "Google hazır değil";
         signInBtn.disabled = true;
         signOutBtn.style.display = "none";
@@ -894,9 +910,9 @@
       }
 
       authUser.style.display = "grid";
-      authAvatar.src = activeUser.photoURL || "";
-      authName.textContent = activeUser.displayName || activeUser.email || "Google hesabı";
-      authMode.textContent = "Buluta kaydediliyor";
+      authAvatar.src = getUserAvatar(activeUser);
+      authName.textContent = getUserName(activeUser);
+      authMode.textContent = "Supabase'e kaydediliyor";
       signInBtn.textContent = "Bağlı";
       signInBtn.disabled = true;
       signOutBtn.style.display = "block";
@@ -1102,30 +1118,54 @@
     });
 
     signInBtn.addEventListener("click", async () => {
-      if (!auth) return;
+      if (!supabase) return;
       saveState.textContent = "Google bekleniyor...";
       try {
-        const provider = new GoogleAuthProvider();
-        await signInWithPopup(auth, provider);
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: window.location.origin
+          }
+        });
+        if (error) throw error;
       } catch (error) {
         saveState.textContent = "Giriş tamamlanmadı.";
       }
     });
 
     signOutBtn.addEventListener("click", async () => {
-      if (!auth) return;
-      await signOut(auth);
+      if (!supabase) return;
+      await supabase.auth.signOut();
     });
 
-    if (auth) {
-      onAuthStateChanged(auth, async (user) => {
-        activeUser = user;
+    if (supabase) {
+      supabase.auth.getSession().then(async ({ data }) => {
+        activeUser = data.session?.user || null;
         renderAuth();
 
-        if (user) {
+        if (activeUser) {
           saveState.textContent = "Notlar yükleniyor...";
           try {
-            await loadCloudStore(user);
+            await loadCloudStore(activeUser);
+            saveState.textContent = "Bulut bağlı.";
+          } catch (error) {
+            saveState.textContent = "Yerel modda kaldı.";
+          }
+        } else {
+          saveState.textContent = "Yerel mod.";
+        }
+
+        renderDay();
+      });
+
+      supabase.auth.onAuthStateChange(async (_event, session) => {
+        activeUser = session?.user || null;
+        renderAuth();
+
+        if (activeUser) {
+          saveState.textContent = "Notlar yükleniyor...";
+          try {
+            await loadCloudStore(activeUser);
             saveState.textContent = "Bulut bağlı.";
           } catch (error) {
             saveState.textContent = "Yerel modda kaldı.";
